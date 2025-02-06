@@ -18,4 +18,8 @@ COPY docker/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 WORKDIR /var/www/html
 
+RUN chown -R www-data:www-data /var/www/html
+
+USER www-data
+
 CMD ["php-fpm"]
