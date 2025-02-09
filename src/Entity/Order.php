@@ -3,9 +3,13 @@
 namespace App\Entity;
 
 use App\Repository\OrderRepository;
+use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
+#[ORM\Table(name: 'orders')]
 class Order
 {
     #[ORM\Id]
@@ -14,17 +18,40 @@ class Order
     private int $id;
 
     #[ORM\ManyToOne(targetEntity: Customer::class)]
+    #[ORM\JoinColumn(nullable: false)]
     private Customer $customer;
 
-    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'order', cascade: ['persist'])]
-    private Collection $items;
+    #[ORM\OneToMany(
+        targetEntity: OrderProduct::class,
+        mappedBy: 'order',
+        cascade: ['persist', 'remove'],
+        fetch: 'EAGER',
+        orphanRemoval: true
+    )]
+    private Collection $orderProducts;
+
+    #[ORM\OneToMany(
+        targetEntity: OrderDiscount::class,
+        mappedBy: 'order',
+        cascade: ['persist', 'remove'],
+        fetch: 'EAGER',
+        orphanRemoval: true
+    )]
+    private Collection $orderDiscounts;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private string $total;
+    private string $total = '0';
 
+    #[ORM\Column(name: 'created_at', type: 'datetime')]
+    private DateTime $createdAt;
+
+    /**
+     *
+     */
     public function __construct()
     {
-        $this->items = new ArrayCollection();
+        $this->orderProducts = new ArrayCollection();
+        $this->createdAt = new DateTime();
     }
 
     /**
@@ -37,11 +64,12 @@ class Order
 
     /**
      * @param int $id
-     * @return void
+     * @return $this
      */
-    public function setId(int $id): void
+    public function setId(int $id): self
     {
         $this->id = $id;
+        return $this;
     }
 
     /**
@@ -54,28 +82,43 @@ class Order
 
     /**
      * @param Customer $customer
-     * @return void
+     * @return $this
      */
-    public function setCustomer(Customer $customer): void
+    public function setCustomer(Customer $customer): self
     {
         $this->customer = $customer;
+        return $this;
     }
 
     /**
-     * @return Collection
+     * @return Collection<int, OrderProduct>
      */
-    public function getItems(): Collection
+    public function getOrderProducts(): Collection
     {
-        return $this->items;
+        return $this->orderProducts;
     }
 
     /**
-     * @param Collection $items
-     * @return void
+     * @param OrderProduct $orderProduct
+     * @return $this
      */
-    public function setItems(Collection $items): void
+    public function addOrderProduct(OrderProduct $orderProduct): self
     {
-        $this->items = $items;
+        if (!$this->orderProducts->contains($orderProduct)) {
+            $this->orderProducts->add($orderProduct);
+            $orderProduct->setOrder($this);
+        }
+        return $this;
+    }
+
+    /**
+     * @param OrderProduct $orderProduct
+     * @return $this
+     */
+    public function removeOrderProduct(OrderProduct $orderProduct): self
+    {
+        $this->orderProducts->removeElement($orderProduct);
+        return $this;
     }
 
     /**
@@ -88,10 +131,108 @@ class Order
 
     /**
      * @param string $total
-     * @return void
+     * @return $this
      */
-    public function setTotal(string $total): void
+    public function setTotal(string $total): self
     {
         $this->total = $total;
+        return $this;
+    }
+
+    /**
+     * @return void
+     */
+    public function calculateTotal(): void
+    {
+        $total = '0';
+        foreach ($this->orderProducts as $orderProduct) {
+            $total = bcadd($total, $orderProduct->getTotal(), 2);
+        }
+        $this->total = $total;
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function getCreatedAt(): DateTime
+    {
+        return $this->createdAt;
+    }
+
+    /**
+     * @param DateTime $createdAt
+     * @return $this
+     */
+    public function setCreatedAt(DateTime $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    /**
+     * @param OrderProduct $orderProduct
+     * @return bool
+     */
+    public function hasOrderProduct(OrderProduct $orderProduct): bool
+    {
+        return $this->orderProducts->contains($orderProduct);
+    }
+
+    /**
+     * @return $this
+     */
+    public function clearOrderProducts(): self
+    {
+        $this->orderProducts->clear();
+        return $this;
+    }
+
+    /**
+     * @return array<OrderProduct>
+     */
+    public function getOrderProductsArray(): array
+    {
+        return $this->orderProducts->toArray();
+    }
+
+    /**
+     * @return int
+     */
+    public function countOrderProducts(): int
+    {
+        return $this->orderProducts->count();
+    }
+
+    /**
+     * @return Collection<int, OrderDiscount>
+     */
+    public function getOrderDiscounts(): Collection
+    {
+        return $this->orderDiscounts;
+    }
+
+    /**
+     * @param OrderDiscount $orderDiscount
+     * @return $this
+     */
+    public function addOrderDiscount(OrderDiscount $orderDiscount): self
+    {
+        if (!$this->orderDiscounts->contains($orderDiscount)) {
+            $this->orderDiscounts->add($orderDiscount);
+            $orderDiscount->setOrder($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param OrderDiscount $orderDiscount
+     * @return $this
+     */
+    public function removeOrderDiscount(OrderDiscount $orderDiscount): self
+    {
+        $this->orderDiscounts->removeElement($orderDiscount);
+
+        return $this;
     }
 }

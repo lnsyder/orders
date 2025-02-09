@@ -2,46 +2,95 @@
 
 namespace App\Controller;
 
-use App\Service\OrderService;
+use App\DTO\Request\OrderRequest;
+use App\Request\RequestValidator;
+use App\Service\Order\OrderService;
+use Exception;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpClient\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/api/orders')]
+#[Route('/api/order')]
 class OrderController extends AbstractController
 {
+    /**
+     * @param OrderService $orderService
+     * @param RequestValidator $validator
+     */
     public function __construct(
-        private OrderService $orderService
-    ) {}
-
-    #[Route('', methods: ['GET'])]
-    public function list(): JsonResponse
+        readonly private OrderService     $orderService,
+        readonly private RequestValidator $validator
+    )
     {
-        $orders = $this->orderService->getAllOrders();
-        return $this->json($orders);
     }
 
-    #[Route('', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    /**
+     * @return JsonResponse
+     */
+    #[Route('/list', methods: ['GET'])]
+    public function list(): JsonResponse
+    {
+        return $this->json($this->orderService->getAllOrdersResponse());
+    }
+
+    /**
+     * @param int $id
+     * @return JsonResponse
+     */
+    #[Route('/{id}', methods: ['GET'])]
+    public function show(int $id): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true);
-            $order = $this->orderService->createOrder($data);
-            return $this->json($order, 201);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], 400);
+            return $this->json($this->orderService->getOrderResponse($id));
+        } catch (InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
+        } catch (Exception $e) {
+            return $this->json(['error' => 'Server error'], 500);
         }
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    #[Route('/save', methods: ['POST', 'PUT'])]
+    public function save(Request $request): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $orderRequest = OrderRequest::fromArray($data);
+            $this->validator->validate($orderRequest);
+
+            return $this->json($this->orderService->saveOrderFromDTO($orderRequest), 201);
+        } catch (JsonException $e) {
+            return $this->json(['error' => 'Invalid JSON format'], 400);
+        } catch (InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        } catch (Exception $e) {
+            return $this->json(['error' => 'Server error'], 500);
+        }
+    }
+
+    /**
+     * @param int $id
+     * @return JsonResponse
+     */
     #[Route('/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         try {
             $this->orderService->deleteOrder($id);
-            return $this->json(null, 204);
-        } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], 404);
+            return $this->json(['message' => 'Order successfully deleted']);
+        } catch (InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        } catch (Exception $e) {
+            return $this->json([
+                'error' => 'An error occurred while processing your request',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

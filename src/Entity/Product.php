@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\ProductRepository;
+use InvalidArgumentException;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -100,5 +101,41 @@ class Product
     public function setStock(int $stock): void
     {
         $this->stock = $stock;
+    }
+
+    /**
+     * @param int $quantity
+     * @return $this
+     */
+    public function increaseStock(int $quantity): self
+    {
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be greater than 0');
+        }
+
+        $this->stock += $quantity;
+        return $this;
+    }
+
+    /**
+     * @param int $quantity
+     * @return $this
+     */
+    public function decreaseStock(int $quantity): self
+    {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be greater than 0');
+        }
+
+        if ($this->stock < $quantity) {
+            throw new InvalidArgumentException(sprintf(
+                'Not enough stock. Requested: %d, Available: %d',
+                $quantity,
+                $this->stock
+            ));
+        }
+
+        $this->stock -= $quantity;
+        return $this;
     }
 }

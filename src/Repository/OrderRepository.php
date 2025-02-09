@@ -3,33 +3,13 @@
 namespace App\Repository;
 
 use App\Entity\Order;
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
 
-class OrderRepository implements OrderRepositoryInterface
+class OrderRepository extends ServiceEntityRepository
 {
-    public function __construct(
-        private EntityManagerInterface $entityManager
-    ) {}
-
-    public function find(int $id): ?Order
+    public function __construct(ManagerRegistry $registry)
     {
-        return $this->entityManager->getRepository(Order::class)->find($id);
-    }
-
-    public function findAll(): array
-    {
-        return $this->entityManager->getRepository(Order::class)->findAll();
-    }
-
-    public function save(Order $order): void
-    {
-        $this->entityManager->persist($order);
-        $this->entityManager->flush();
-    }
-
-    public function delete(Order $order): void
-    {
-        $this->entityManager->remove($order);
-        $this->entityManager->flush();
+        parent::__construct($registry, Order::class);
     }
 }
