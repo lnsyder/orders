@@ -24,15 +24,15 @@ DATABASE_URL="pgsql://user:password@postgres:5432/postgres?serverVersion=16&char
 ```
 ### 5) Oluşan Veritabanına; Tabloları, Discount strajeilerini ve Product Stock Trigger'ını eklemek için:
 ```
-docker exec -it orders-app bash -c "bin/console doctrine:migrations:migrate"
+docker exec -it orders-app bash -c "php bin/console doctrine:migrations:migrate"
 ```
 ### 6) Customer verisini çekmek için aşağıdaki command'ı tetikleyin:
 ```
-docker exec -it orders-app bash -c "bin/console app:import-customers"
+docker exec -it orders-app bash -c "php bin/console app:import-customers"
 ```
 ### 7) Product verisini çekmek için aşağıdaki command'ı tetikleyin:
 ```
-docker exec -it orders-app bash -c "bin/console app:import-products"
+docker exec -it orders-app bash -c "php bin/console app:import-products"
 ```
 ### Uygulama artık http://localhost/ adresinden erişilebilir olacaktır.
 
