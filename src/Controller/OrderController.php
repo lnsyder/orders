@@ -48,7 +48,7 @@ class OrderController extends AbstractController
         } catch (InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 404);
         } catch (Exception $e) {
-            return $this->json(['error' => 'Server error'], 500);
+            return $this->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -70,7 +70,7 @@ class OrderController extends AbstractController
         } catch (InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         } catch (Exception $e) {
-            return $this->json(['error' => 'Server error'], 500);
+            return $this->json(['error' => $e->getMessage()], 500);
         }
     }
 
