@@ -26,16 +26,16 @@ class BuyFiveGetOneStrategy implements DiscountStrategyInterface
      */
     public function calculate(Order $order): ?OrderDiscount
     {
+        $discount = $this->getDiscountEntity();
+
+        if (!$discount) {
+            return null;
+        }
+
         foreach ($order->getOrderProducts() as $item) {
             if ($item->getProduct()->getCategory() === 2 && $item->getQuantity() >= 6) {
                 $freeItems = floor($item->getQuantity() / 6);
                 $discountAmount = $item->getUnitPrice() * $freeItems;
-
-                $discount = $this->getDiscountEntity();
-
-                if (!$discount) {
-                    return null;
-                }
 
                 return new OrderDiscount(
                     $order,

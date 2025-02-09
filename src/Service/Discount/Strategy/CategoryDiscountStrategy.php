@@ -27,19 +27,20 @@ class CategoryDiscountStrategy implements DiscountStrategyInterface
      */
     public function calculate(Order $order): ?OrderDiscount
     {
+        $discount = $this->getDiscountEntity();
+
+        if (!$discount) {
+            return null;
+        }
+
         $category1Items = array_filter($order->getOrderProductsArray(), static function($item) {
             return $item->getProduct()->getCategory() === 1;
         });
 
         if (count($category1Items) >= 2) {
+
             $cheapestItem = $this->findCheapestItem($category1Items);
             $discountAmount = $cheapestItem->getTotal() * 0.20;
-
-            $discount = $this->getDiscountEntity();
-
-            if (!$discount) {
-                return null;
-            }
 
             return new OrderDiscount(
                 $order,

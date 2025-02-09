@@ -26,14 +26,14 @@ class TenPercentOverThousandStrategy implements DiscountStrategyInterface
      */
     public function calculate(Order $order): ?OrderDiscount
     {
+        $discount = $this->getDiscountEntity();
+
+        if (!$discount) {
+            return null;
+        }
+
         if ($order->getTotal() >= 1000) {
             $discountAmount = $order->getTotal() * 0.10;
-
-            $discount = $this->getDiscountEntity();
-
-            if (!$discount) {
-                return null;
-            }
 
             return new OrderDiscount(
                 $order,
